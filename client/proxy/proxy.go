@@ -3,6 +3,7 @@ package proxy
 import (
 	"errors"
 	"fmt"
+	"github.com/hellgate75/go-tcp-server/client/proxy/shell"
 	"github.com/hellgate75/go-tcp-server/client/proxy/transfer"
 	"github.com/hellgate75/go-tcp-server/common"
 )
@@ -13,6 +14,7 @@ var filled bool = false
 
 func initMap() {
 	sendersMap["transfer-file"] = transfer.New()
+	sendersMap["shell"] = shell.New()
 	filled = true
 }
 
@@ -28,6 +30,9 @@ func GetSender(command string) (common.Sender, error) {
 }
 
 func Help() []string {
+	if !filled {
+		initMap()
+	}
 	var list []string = make([]string, 0)
 	for _, sender := range sendersMap {
 		list = append(list, sender.Helper())

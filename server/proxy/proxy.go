@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hellgate75/go-tcp-server/common"
+	"github.com/hellgate75/go-tcp-server/server/proxy/shell"
 	"github.com/hellgate75/go-tcp-server/server/proxy/transfer"
 	"strings"
 )
@@ -14,6 +15,7 @@ var filled bool = false
 
 func initMap() {
 	commandsMap["transfer-file"] = transfer.New()
+	commandsMap["shell"] = shell.New()
 	filled = true
 }
 

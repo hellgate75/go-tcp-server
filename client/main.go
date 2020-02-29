@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/hellgate75/go-deploy/log"
 	"github.com/hellgate75/go-tcp-server/client/worker"
 	"github.com/hellgate75/go-tcp-server/common"
@@ -37,14 +38,21 @@ func main() {
 	var commands []string = make([]string, 0)
 	var args []string = os.Args[1:]
 	var hasToken bool = false
+	var counter int = 0
 	for _, arg := range args {
 		if "-h" == arg || "--help" == arg {
 			fSet.Usage()
 			os.Exit(0)
 		}
 		if "-" == arg[0:1] {
-			hasToken = true
+			if counter < 2 {
+				hasToken = true
+				counter = 0
+			} else {
+				commands = append(commands, arg)
+			}
 		} else if !hasToken {
+			counter += 1
 			commands = append(commands, arg)
 		} else {
 			hasToken = false
@@ -73,9 +81,9 @@ func main() {
 			strings.ToLower(cmd) == "--help" ||
 			strings.ToLower(cmd) == "-h" {
 			list := client.GetHelp()
-			Logger.Info("List of commands:")
+			fmt.Println("List of commands:")
 			for _, item := range list {
-				Logger.Printf("- %s", item)
+				fmt.Printf("- %s", item)
 			}
 			return
 
@@ -105,11 +113,11 @@ func main() {
 		}
 		if "ok" == answer {
 			Logger.Infof("Command Message '%s' sent and executed successfully!!", cmd)
+			Logger.Debugf("Response: %v", answer)
 		} else {
-			Logger.Error("Command Message '%s' sent but failed!!")
-
+			Logger.Errorf("Command Message '%s' sent but failed!!", cmd)
+			Logger.Errorf("Response: %v", answer)
 		}
-		Logger.Debugf("Response: %v", answer)
 	}
 	exitClient(client)
 }
