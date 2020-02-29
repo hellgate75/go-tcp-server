@@ -12,8 +12,11 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var Logger log.Logger = log.NewAppLogger("go-tcp-server", "INFO")
@@ -45,12 +48,18 @@ func (server *tcpServer) Stop() {
 	}
 }
 
+var currentListener net.Listener
+
 func (server *tcpServer) Start() error {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New(fmt.Sprintf("%v", r))
+			Logger.Errorf("Errors: %v", r)
+			Logger.Fatal("TCP Server exit ...")
+			os.Exit(0)
 		}
+		Logger.Fatal("TCP Server exit ...")
 	}()
 
 	var certificates []tls.Certificate = make([]tls.Certificate, 0)
@@ -60,7 +69,7 @@ func (server *tcpServer) Start() error {
 		cert, err := tls.LoadX509KeyPair(keyPair.Cert, keyPair.Key)
 
 		if err != nil {
-			Logger.Fatal(fmt.Sprintf("server: loadkeys: %s", err))
+			Logger.Fatalf("server: loadkeys: %s", err)
 			panic("server: loadkeys:" + err.Error())
 		}
 		certificates = append(certificates, cert)
@@ -76,8 +85,13 @@ func (server *tcpServer) Start() error {
 	service := fmt.Sprintf("%s:%s", server.IpAddress, server.Port)
 	listener, err := tls.Listen("tcp", service, &config)
 	if err != nil {
-		Logger.Fatal(fmt.Sprintf("server: listen: %s", err))
+		Logger.Fatalf("server: listen: %v", err)
+		if listener != nil {
+			listener.Close()
+		}
+		panic("server: listen: " + err.Error())
 	}
+	currentListener = listener
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
@@ -88,12 +102,12 @@ func (server *tcpServer) Start() error {
 		for server.running {
 			conn, errN := listener.Accept()
 			if errN != nil {
-				Logger.Error(fmt.Sprintf("server: accept: %s", errN))
+				Logger.Errorf("server: accept: %s", errN)
 				continue
 			}
 			server.conn = append(server.conn, &conn)
 			defer conn.Close()
-			Logger.Info(fmt.Sprintf("server: accepted from %s", conn.RemoteAddr()))
+			Logger.Debugf("server: accepted from %s", conn.RemoteAddr())
 			tlscon, ok := conn.(*tls.Conn)
 			if ok {
 				Logger.Info("ok=true")
@@ -103,20 +117,25 @@ func (server *tcpServer) Start() error {
 				}
 			}
 			server.tlscon = append(server.tlscon, tlscon)
-			go handleClient(tlscon)
+			go handleClient(tlscon, server)
 		}
 	}()
 	return err
 }
 
-func handleClient(conn *tls.Conn) {
-	defer conn.Close()
+func handleClient(conn *tls.Conn, server *tcpServer) {
+	defer func() {
+		if r := recover(); r != nil {
+			Logger.Errorf("Errors handling client request: %v", r)
+		}
+		conn.Close()
+	}()
 	var buffSize int = 2048
 	var open bool = true
 	for open {
 		str, errRead := common.ReadStringBuffer(buffSize, conn)
 		if errRead != nil {
-			Logger.Info(fmt.Sprintf("server: conn: read error: %s", errRead))
+			Logger.Infof("server: conn: read error: %s", errRead)
 			open = false
 			return
 		}
@@ -147,27 +166,46 @@ func handleClient(conn *tls.Conn) {
 				conn.Close()
 				return
 			}
+			var execCmdText string
 			Logger.Warnf("Discovered executables: %s, args: %v", executable, os.Args[1:])
-			var cmd *exec.Cmd
-			if len(os.Args) > 1 {
-				cmd = exec.Command(executable, os.Args[1:]...)
+			var cmdExecutor []string = make([]string, 0)
+			if runtime.GOOS == "windows" {
+				execCmdText = "cmd"
+				cmdExecutor = append(cmdExecutor, "/C")
 			} else {
-				cmd = exec.Command(executable)
+				execCmdText = "sh"
+				cmdExecutor = append(cmdExecutor, "-c")
 			}
-			Logger.Warnf("Cmmand: %s", cmd.String())
-			//			cmd.Run()
-			stdoutStderr, errCmd := cmd.CombinedOutput()
-			if errCmd != nil {
-				var message string = fmt.Sprintf("Error runninf executables -> Details: ", errCmd.Error())
-				Logger.Error(message)
-				common.WriteString("ko:restart:"+message, conn)
-				conn.Close()
-				return
+
+			cmdExecutor = append(cmdExecutor, executable)
+			if len(os.Args) > 1 {
+				cmdExecutor = append(cmdExecutor, os.Args[1:]...)
 			}
-			Logger.Warnf("Executables: %s, ran successfully", executable)
-			common.WriteString(fmt.Sprintf("%s\n", stdoutStderr), conn)
+			var cmd *exec.Cmd = exec.Command(execCmdText, cmdExecutor...)
+			var path string
+			path, errWd := os.Getwd()
+			if errWd != nil {
+				path = filepath.Dir(executable)
+			}
+			Logger.Warnf("Working Dir: %s", path)
+			cmd.Dir = path
+			Logger.Warnf("Command: %s", cmd.String())
+			go func() {
+				stdoutStderr, errCmd := cmd.CombinedOutput()
+				Logger.Warnf("errCmd: %v", errCmd)
+				Logger.Warnf("stdoutStderr: %v", stdoutStderr)
+				if errCmd != nil {
+					var message string = fmt.Sprintf("Error runninf executables -> Details: ", errCmd.Error())
+					Logger.Error(message)
+					return
+				}
+				Logger.Warnf("Executables: %s, ran successfully", executable)
+			}()
 			common.WriteString("ok", conn)
 			conn.Close()
+			server.Stop()
+			currentListener.Close()
+			time.Sleep(10 * time.Second)
 			os.Exit(0)
 		} else if len(command) > 12 && "buffer-size:" == strings.ToLower(command[:12]) {
 			list := strings.Split(command, ":")
