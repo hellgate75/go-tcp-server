@@ -92,9 +92,31 @@ func main() {
 		client.Open(true)
 		defer client.Close()
 
-		if "shutdown" == cmd {
+		if "shutdown" == cmd || "restart" == cmd {
 			client.SendText(cmd)
 			Logger.Warnf("Called: %s. It will change the server state!!", cmd)
+			var repeat bool = true
+			var counter int = 0
+			for repeat && counter < 2 {
+				time.Sleep(2 * time.Second)
+				out, errCmd := client.ReadAnswer()
+				fmt.Printf("out=%s\n", out)
+				if errCmd == nil && len(out) >= 2 {
+					counter += 1
+					if out[0:2] == "ok" {
+						Logger.Warnf("Called: %s. Success reported from server!!", cmd)
+						repeat = false
+					} else if out[0:2] == "ko" {
+						Logger.Errorf("Called: %s. Errors reported from server, Details -> ", out)
+						repeat = false
+					} else {
+						Logger.Errorf("Called: %s. Message reported from server, Details -> ", out)
+					}
+				} else {
+					Logger.Errorf("Error reported waiting for answer: %s", errCmd.Error())
+					repeat = false
+				}
+			}
 			return
 		}
 

@@ -11,6 +11,7 @@ import (
 	"github.com/hellgate75/go-tcp-server/server/proxy"
 	"net"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 )
@@ -132,6 +133,40 @@ func handleClient(conn *tls.Conn) {
 		} else if "shutdown" == strings.ToLower(command) {
 			open = false
 			Logger.Info("Shutdown server ...")
+			common.WriteString("ok", conn)
+			conn.Close()
+			os.Exit(0)
+		} else if "restart" == strings.ToLower(command) {
+			open = false
+			Logger.Info("Restarting server ...")
+			executable, errExec := os.Executable()
+			if errExec != nil {
+				var message string = fmt.Sprintf("Error recovering executables -> Details: ", errExec.Error())
+				Logger.Error(message)
+				common.WriteString("ko:restart:"+message, conn)
+				conn.Close()
+				return
+			}
+			Logger.Warnf("Discovered executables: %s, args: %v", executable, os.Args[1:])
+			var cmd *exec.Cmd
+			if len(os.Args) > 1 {
+				cmd = exec.Command(executable, os.Args[1:]...)
+			} else {
+				cmd = exec.Command(executable)
+			}
+			Logger.Warnf("Cmmand: %s", cmd.String())
+			//			cmd.Run()
+			stdoutStderr, errCmd := cmd.CombinedOutput()
+			if errCmd != nil {
+				var message string = fmt.Sprintf("Error runninf executables -> Details: ", errCmd.Error())
+				Logger.Error(message)
+				common.WriteString("ko:restart:"+message, conn)
+				conn.Close()
+				return
+			}
+			Logger.Warnf("Executables: %s, ran successfully", executable)
+			common.WriteString(fmt.Sprintf("%s\n", stdoutStderr), conn)
+			common.WriteString("ok", conn)
 			conn.Close()
 			os.Exit(0)
 		} else if len(command) > 12 && "buffer-size:" == strings.ToLower(command[:12]) {
