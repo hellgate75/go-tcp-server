@@ -91,6 +91,13 @@ func main() {
 		Logger.Infof("Summary:\nIp: %s\nPort: %s\ncerts: %v\nkeys: %v\n", host, port, certs, keys)
 		client.Open(true)
 		defer client.Close()
+
+		if "shutdown" == cmd {
+			client.SendText(cmd)
+			Logger.Warnf("Called: %s. It will change the server state!!", cmd)
+			return
+		}
+
 		var commandArgs []string = commands[1:]
 		Logger.Infof("Command Args: (len: %v) %v", len(commandArgs), commandArgs)
 		var params []interface{} = make([]interface{}, 0)
