@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/hellgate75/go-tcp-server/common"
 	"github.com/hellgate75/go-tcp-server/server/proxy/transfer"
+	"strings"
 )
 
 var commandsMap map[string]common.Commander = make(map[string]common.Commander)
@@ -20,12 +21,13 @@ func GetCommander(command string) (common.Commander, error) {
 	if !filled {
 		initMap()
 	}
-	if commander, ok := commandsMap[command]; ok {
+	var cmd string = strings.TrimSpace(strings.ToLower(command))
+	if commander, ok := commandsMap[cmd]; ok {
 		if commander == nil {
-			return nil, errors.New(fmt.Sprintf("Unable to collect command: %s", command))
+			return nil, errors.New(fmt.Sprintf("Unable to collect command: %s", cmd))
 		}
 		return commander, nil
 	} else {
-		return nil, errors.New(fmt.Sprintf("Command unavailable: %s", command))
+		return nil, errors.New(fmt.Sprintf("Command unavailable: %s", cmd))
 	}
 }

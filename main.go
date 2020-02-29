@@ -17,6 +17,7 @@ var certsStr = ""
 var keysStr = ""
 var host = ""
 var port = ""
+var verbosity string = ""
 var fSet *flag.FlagSet
 
 func init() {
@@ -25,9 +26,15 @@ func init() {
 	fSet.StringVar(&keysStr, "keys", "certs/server.key", "Comma separated server certs keys list")
 	fSet.StringVar(&host, "ip", common.DEFAULT_IP_ADDRESS, "Listening ip address")
 	fSet.StringVar(&port, "port", common.DEFAULT_PORT, "Listening port")
+	fSet.StringVar(&verbosity, "verbosity", "INFO", "Logger verbosity level [TRACE,DEBUG,INFO,ERROR,FATAL] ")
 }
 
 func main() {
+	if errParse := fSet.Parse(os.Args[1:]); errParse != nil {
+		Logger.Errorf("Error in arguments parse: %s", errParse.Error())
+		fSet.Usage()
+		os.Exit(1)
+	}
 	var args []string = os.Args
 	for _, arg := range args {
 		if "-h" == arg || "--help" == arg {
@@ -35,6 +42,10 @@ func main() {
 			os.Exit(0)
 		}
 
+	}
+	if string(Logger.GetVerbosity()) != strings.ToUpper(verbosity) {
+		Logger.Infof("Changing logger verbosity to: %s", strings.ToUpper(verbosity))
+		Logger.SetVerbosity(log.VerbosityLevelFromString(strings.ToUpper(verbosity)))
 	}
 	var certs = strings.Split(certsStr, ",")
 	var keys = strings.Split(keysStr, ",")

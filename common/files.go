@@ -42,6 +42,10 @@ func ReadString(conn *tls.Conn) (string, error) {
 	return readString(2048, conn)
 }
 
+func ReadStringBuffer(buffSize int, conn *tls.Conn) (string, error) {
+	return readString(buffSize, conn)
+}
+
 func Read(conn *tls.Conn) ([]byte, error) {
 	value, errX := readString(2048, conn)
 	if errX != nil {

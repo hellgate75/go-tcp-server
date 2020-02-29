@@ -3,8 +3,6 @@ package server
 import (
 	"crypto/rand"
 	"crypto/tls"
-	//     "log"
-	"bytes"
 	"crypto/x509"
 	"errors"
 	"fmt"
@@ -115,27 +113,13 @@ func handleClient(conn *tls.Conn) {
 	var buffSize int = 2048
 	var open bool = true
 	for open {
-		buf := make([]byte, buffSize)
-		var buff *bytes.Buffer = bytes.NewBuffer([]byte{})
-		var n int = 1
-		var err error
-		Logger.Info("server: conn: waiting")
-		Logger.Info("server: conn: fetch")
-		n, err = conn.Read(buf)
-		if err != nil {
-			Logger.Info(fmt.Sprintf("server: conn: read error: %s", err))
+		str, errRead := common.ReadStringBuffer(buffSize, conn)
+		if errRead != nil {
+			Logger.Info(fmt.Sprintf("server: conn: read error: %s", errRead))
 			open = false
 			return
 		}
-		if n > 0 {
-			Logger.Info("server: conn: read")
-			Logger.Infof("server: conn: read -> %s", buf[:n])
-			_, err = buff.Write(buf[:n])
-			if err != nil {
-				Logger.Info(fmt.Sprintf("server: conn: buffer write error: %s", err))
-			}
-		}
-		var command string = buff.String()
+		var command string = str
 		if command == "" {
 			continue
 		}
@@ -165,13 +149,19 @@ func handleClient(conn *tls.Conn) {
 				var message string = fmt.Sprintf("Error to find command: <%s> -> %s", command, errP.Error())
 				Logger.Error(message)
 				common.WriteString("ko:"+message, conn)
+				continue
 			}
 			if commander == nil {
 				var message string = fmt.Sprintf("Error to reference command: <%s> !!", command)
 				Logger.Error(message)
 				common.WriteString("ko:"+message, conn)
+				continue
+			}
+			errCom := commander.Execute(conn)
+			if errCom != nil {
+				common.WriteString("ko:command:"+command+"->"+errCom.Error(), conn)
 			} else {
-				commander.Execute(conn)
+				common.WriteString("ok", conn)
 			}
 		}
 	}

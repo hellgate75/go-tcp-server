@@ -12,21 +12,28 @@ import (
 
 var Logger log.Logger = log.NewAppLogger("go-tcp-client", "INFO")
 
-var certs = ""
-var keys = ""
-var host = ""
-var port = ""
+var certs string = ""
+var keys string = ""
+var host string = ""
+var port string = ""
+var verbosity string = ""
 var fSet *flag.FlagSet
 
 func init() {
-	fSet = flag.NewFlagSet("go-tcp-client", flag.ExitOnError)
+	fSet = flag.NewFlagSet("go-tcp-client", flag.ContinueOnError)
 	fSet.StringVar(&certs, "certs", "certs/server.pem", "Comma separated pem server certificate list")
 	fSet.StringVar(&keys, "keys", "certs/server.key", "Comma separated server certs keys list")
 	fSet.StringVar(&host, "ip", common.DEFAULT_CLIENT_IP_ADDRESS, "Server ip address")
 	fSet.StringVar(&port, "port", common.DEFAULT_PORT, "Server port")
+	fSet.StringVar(&verbosity, "verbosity", "INFO", "Logger verbosity level [TRACE,DEBUG,INFO,ERROR,FATAL] ")
 }
 
 func main() {
+	if errParse := fSet.Parse(os.Args[1:]); errParse != nil {
+		Logger.Errorf("Error in arguments parse: %s", errParse.Error())
+		fSet.Usage()
+		os.Exit(1)
+	}
 	var commands []string = make([]string, 0)
 	var args []string = os.Args[1:]
 	var hasToken bool = false
@@ -43,6 +50,12 @@ func main() {
 			hasToken = false
 		}
 
+	}
+	Logger.Infof("new verbosity: <%s>", strings.ToUpper(verbosity))
+	Logger.Infof("logger verbosity: %v", Logger.GetVerbosity())
+	if string(Logger.GetVerbosity()) != strings.ToUpper(verbosity) {
+		Logger.Infof("Changing logger verbosity to: %s", strings.ToUpper(verbosity))
+		Logger.SetVerbosity(log.VerbosityLevelFromString(strings.ToUpper(verbosity)))
 	}
 	var lenght int = len(certs)
 	if lenght > len(keys) {
@@ -76,7 +89,7 @@ func main() {
 		for _, val := range commandArgs {
 			params = append(params, val)
 		}
-		Logger.Infof("Params: (len: %v) %v", len(params), params)
+		Logger.Debugf("Params: (len: %v) %v", len(params), params)
 		err1 := client.ApplyCommand(cmd, params...)
 		if err1 != nil {
 			Logger.Errorf("Error sending command %s, Details: %s", cmd, err1.Error())
@@ -91,12 +104,12 @@ func main() {
 			return
 		}
 		if "ok" == answer {
-			Logger.Info("Command Message '%s' sent and executed successfully!!")
+			Logger.Infof("Command Message '%s' sent and executed successfully!!", cmd)
 		} else {
 			Logger.Error("Command Message '%s' sent but failed!!")
 
 		}
-		Logger.Infof("Response: ", answer)
+		Logger.Debugf("Response: %v", answer)
 	}
 	exitClient(client)
 }

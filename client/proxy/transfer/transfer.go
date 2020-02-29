@@ -12,11 +12,10 @@ import (
 
 type tranfer struct{}
 
-var serverCommand string = "transfer"
+var serverCommand string = "transfer-file"
 
 func (tranfer *tranfer) SendMessage(conn *tls.Conn, params ...interface{}) error {
 	var paramsLen int = len(params)
-	fmt.Printf("params (len %v): %v", paramsLen, params)
 	if paramsLen < 2 {
 		return errors.New(fmt.Sprintf("Insufficient number of parameters, expected 2 but give %v", paramsLen))
 	}
