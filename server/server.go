@@ -59,7 +59,6 @@ func (server *tcpServer) Start() error {
 			Logger.Fatal("TCP Server exit ...")
 			os.Exit(0)
 		}
-		Logger.Fatal("TCP Server exit ...")
 	}()
 
 	var certificates []tls.Certificate = make([]tls.Certificate, 0)
@@ -74,7 +73,18 @@ func (server *tcpServer) Start() error {
 		}
 		certificates = append(certificates, cert)
 	}
-	config := tls.Config{Certificates: certificates}
+	config := tls.Config{
+		Certificates:             certificates,
+		MinVersion:               tls.VersionTLS12,
+		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+		PreferServerCipherSuites: true,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		},
+	}
 	config.Rand = rand.Reader
 	if server.IpAddress == "" {
 		server.IpAddress = common.DEFAULT_IP_ADDRESS
@@ -92,11 +102,14 @@ func (server *tcpServer) Start() error {
 		panic("server: listen: " + err.Error())
 	}
 	currentListener = listener
+	Logger.Infof("server: listen: %v", service)
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
 				err = errors.New(fmt.Sprintf("%v", r))
+				Logger.Fatalf("TCP Server exit ...")
 			}
+			Logger.Info("TCP Server exit ...")
 		}()
 		server.running = true
 		for server.running {
@@ -127,8 +140,10 @@ func handleClient(conn *tls.Conn, server *tcpServer) {
 	defer func() {
 		if r := recover(); r != nil {
 			Logger.Errorf("Errors handling client request: %v", r)
+			Logger.Error("Client connection error ...")
 		}
 		conn.Close()
+		Logger.Info("Client connection exit ...")
 	}()
 	var buffSize int = 2048
 	var open bool = true
