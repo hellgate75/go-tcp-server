@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/hellgate75/go-deploy-server/common"
-	"github.com/hellgate75/go-deploy-server/log"
-	"github.com/hellgate75/go-deploy-server/server"
+	"github.com/hellgate75/go-tcp-server/common"
+	"github.com/hellgate75/go-tcp-server/log"
+	"github.com/hellgate75/go-tcp-server/server"
 	"os"
 	"strings"
 	"time"
