@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/gookit/color"
 	"github.com/hellgate75/go-deploy/log"
 	"github.com/hellgate75/go-tcp-server/client/worker"
 	"github.com/hellgate75/go-tcp-server/common"
@@ -59,10 +60,8 @@ func main() {
 		}
 
 	}
-	Logger.Infof("new verbosity: <%s>", strings.ToUpper(verbosity))
-	Logger.Infof("logger verbosity: %v", Logger.GetVerbosity())
 	if string(Logger.GetVerbosity()) != strings.ToUpper(verbosity) {
-		Logger.Infof("Changing logger verbosity to: %s", strings.ToUpper(verbosity))
+		Logger.Debugf("Changing logger verbosity to: %s", strings.ToUpper(verbosity))
 		Logger.SetVerbosity(log.VerbosityLevelFromString(strings.ToUpper(verbosity)))
 	}
 	var lenght int = len(certs)
@@ -83,12 +82,12 @@ func main() {
 			list := client.GetHelp()
 			fmt.Println("List of commands:")
 			for _, item := range list {
-				fmt.Printf("- %s", item)
+				color.Yellow.Printf("- %s", item)
 			}
 			return
 
 		}
-		Logger.Infof("Summary:\nIp: %s\nPort: %s\ncerts: %v\nkeys: %v\n", host, port, certs, keys)
+		Logger.Debugf("Summary:\nIp: %s\nPort: %s\ncerts: %v\nkeys: %v\n", host, port, certs, keys)
 		client.Open(true)
 		defer client.Close()
 
@@ -100,17 +99,16 @@ func main() {
 			for repeat && counter < 2 {
 				time.Sleep(2 * time.Second)
 				out, errCmd := client.ReadAnswer()
-				fmt.Printf("out=%s\n", out)
 				if errCmd == nil && len(out) >= 2 {
 					counter += 1
 					if out[0:2] == "ok" {
-						Logger.Warnf("Called: %s. Success reported from server!!", cmd)
+						Logger.Successf("Called: %s. Success reported from server!!", cmd)
 						repeat = false
 					} else if out[0:2] == "ko" {
-						Logger.Errorf("Called: %s. Errors reported from server, Details -> ", out)
+						Logger.Failuref("Called: %s. Errors reported from server, Details -> ", out)
 						repeat = false
 					} else {
-						Logger.Errorf("Called: %s. Message reported from server, Details -> ", out)
+						Logger.Infof("Called: %s. Message reported from server, Details -> ", out)
 					}
 				} else {
 					Logger.Errorf("Error reported waiting for answer: %s", errCmd.Error())
@@ -118,15 +116,29 @@ func main() {
 				}
 			}
 			return
+		} else if "exit" == cmd {
+			exitClient(client)
+			time.Sleep(2 * time.Second)
+			out, errCmd := client.ReadAnswer()
+			if errCmd == nil && len(out) >= 2 {
+				if out[0:2] == "ok" {
+					Logger.Successf("Called: %s. Success reported from server!!", cmd)
+				} else if out[0:2] == "ko" {
+					Logger.Failuref("Called: %s. Errors reported from server, Details -> ", out)
+				} else {
+					Logger.Infof("Called: %s. Message reported from server, Details -> ", out)
+				}
+			}
+			return
 		}
 
 		var commandArgs []string = commands[1:]
-		Logger.Infof("Command Args: (len: %v) %v", len(commandArgs), commandArgs)
+		Logger.Tracef("Command Args: (len: %v) %v", len(commandArgs), commandArgs)
 		var params []interface{} = make([]interface{}, 0)
 		for _, val := range commandArgs {
 			params = append(params, val)
 		}
-		Logger.Debugf("Params: (len: %v) %v", len(params), params)
+		Logger.Tracef("Params: (len: %v) %v", len(params), params)
 		err1 := client.ApplyCommand(cmd, params...)
 		if err1 != nil {
 			Logger.Errorf("Error sending command %s, Details: %s", cmd, err1.Error())
@@ -141,7 +153,7 @@ func main() {
 			return
 		}
 		if "ok" == answer {
-			Logger.Infof("Command Message '%s' sent and executed successfully!!", cmd)
+			Logger.Successf("Command Message '%s' sent and executed successfully!!", cmd)
 			Logger.Debugf("Response: %v", answer)
 		} else {
 			Logger.Errorf("Command Message '%s' sent but failed!!", cmd)
@@ -154,5 +166,5 @@ func main() {
 func exitClient(client common.TCPClient) {
 	client.SendText("exit")
 	time.Sleep(2 * time.Second)
-	Logger.Info("Exit!!")
+	Logger.Success("Exit!!")
 }

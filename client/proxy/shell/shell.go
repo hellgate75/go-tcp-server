@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/gookit/color"
 	"github.com/hellgate75/go-tcp-server/common"
 	"io/ioutil"
 	"os"
@@ -51,7 +52,7 @@ func (shell *shell) SendMessage(conn *tls.Conn, params ...interface{}) error {
 			interactive = "false"
 		}
 	}
-	fmt.Printf("Shell Script: %s, Is Script: %v\n", shellCommandOrScript, isScriptFile)
+	//	fmt.Printf("Shell Script: %s, Is Script: %v\n", shellCommandOrScript, isScriptFile)
 	n0, err3b := common.WriteString(serverCommand, conn)
 	if err3b != nil {
 		return err3b
@@ -134,7 +135,7 @@ func (shell *shell) SendMessage(conn *tls.Conn, params ...interface{}) error {
 		if errAnswer != nil {
 			return errors.New(fmt.Sprintf("Receive data -> shell command: %v", script))
 		}
-		fmt.Printf("Answer: %s\n", string(content))
+		color.Yellow.Printf("Response: %s\n", string(content))
 	} else {
 		n2, err5 := common.WriteString("shell", conn)
 		if err5 != nil {
@@ -147,38 +148,42 @@ func (shell *shell) SendMessage(conn *tls.Conn, params ...interface{}) error {
 			fmt.Println("Error: exit shell!!")
 			return errors.New("Unable to send shell command")
 		}
+		color.Yellow.Printf("Shell mode : type exit command to exit the mode\n")
 		time.Sleep(3 * time.Second)
+		color.Green.Printf("shell> ")
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			var currentCommand string = scanner.Text()
+			color.Yellow.Printf("Sending request to the server...\n")
 			if "exit" == strings.ToLower(currentCommand) {
-				fmt.Println("Request: exit shell!!")
+				color.Green.Println("Request: exit shell!!")
 				break
 			}
 			n3, err6 := common.WriteString(currentCommand, conn)
 			if err6 != nil {
 				common.WriteString("exit", conn)
-				fmt.Println("Error: exit shell!!")
+				color.Red.Println("Error: exit shell!!")
 				return err6
 			}
 			if n3 == 0 {
 				common.WriteString("exit", conn)
-				fmt.Println("Error: exit shell!!")
+				color.Red.Println("Error: exit shell!!")
 				return errors.New(fmt.Sprintf("Unable to send command ->  %v", currentCommand))
 			}
 			time.Sleep(3 * time.Second)
 			content, errAnswer := common.Read(conn)
 			if errAnswer != nil {
 				common.WriteString("exit", conn)
-				fmt.Println("Error: exit shell!!")
+				color.Red.Println("Error: exit shell!!")
 				return errAnswer
 			}
 			fmt.Println("Response: ", string(content))
+			color.Green.Printf("shell> ")
 		}
 
 		if err := scanner.Err(); err != nil {
 			common.WriteString("exit", conn)
-			fmt.Println("Error: exit shell!!")
+			color.Red.Println("Error: exit shell!!")
 			return err
 		}
 

@@ -44,7 +44,7 @@ func main() {
 
 	}
 	if string(Logger.GetVerbosity()) != strings.ToUpper(verbosity) {
-		Logger.Infof("Changing logger verbosity to: %s", strings.ToUpper(verbosity))
+		Logger.Debugf("Changing logger verbosity to: %s", strings.ToUpper(verbosity))
 		Logger.SetVerbosity(log.VerbosityLevelFromString(strings.ToUpper(verbosity)))
 	}
 	var certs = strings.Split(certsStr, ",")
@@ -60,14 +60,14 @@ func main() {
 			Key:  keys[i],
 		})
 	}
-	Logger.Infof("Summary:\nIp: %s\nPort: %s\ncerts: %v\nkeys: %v\n", host, port, certs, keys)
+	Logger.Debugf("Summary:\nIp: %s\nPort: %s\ncerts: %v\nkeys: %v\n", host, port, certs, keys)
 	server := server.NewServer(certsPair, host, port)
 	server.Start()
 	time.Sleep(2 * time.Second)
-	Logger.Infof("Running: %v", server.IsRunning())
+	Logger.Debugf("Running: %v", server.IsRunning())
 	for server.IsRunning() {
 		fmt.Print(".")
 		time.Sleep(30 * time.Second)
 	}
-	Logger.Info("Exit!!")
+	Logger.Debugf("Exit!!")
 }

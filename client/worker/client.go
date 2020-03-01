@@ -34,15 +34,16 @@ func (tcpClient *tcpClient) Open(insecureSkipVerify bool) error {
 		return errors.New(fmt.Sprintf("client: dial: %s", err))
 	}
 	tcpClient.conn = conn
-	Logger.Info("client: connected to: ", conn.RemoteAddr())
+	Logger.Debugf("client: connected to: %v", conn.RemoteAddr())
 
 	state := conn.ConnectionState()
 	for _, v := range state.PeerCertificates {
-		Logger.Info(x509.MarshalPKIXPublicKey(v.PublicKey))
-		Logger.Info(v.Subject)
+		Logger.Debug(x509.MarshalPKIXPublicKey(v.PublicKey))
+		Logger.Debug(v.Subject)
 	}
-	Logger.Info("client: handshake: ", state.HandshakeComplete)
-	Logger.Info("client: mutual: ", state.NegotiatedProtocolIsMutual)
+	Logger.Debug("client: handshake: ", state.HandshakeComplete)
+	Logger.Debug("client: mutual: ", state.NegotiatedProtocolIsMutual)
+	Logger.Info("client: Connected!!")
 	return nil
 }
 
@@ -56,7 +57,7 @@ func (tcpClient *tcpClient) Send(message bytes.Buffer) error {
 		Logger.Errorf("client: write: %s", err.Error())
 		return errors.New(fmt.Sprintf("client: write: %s", err.Error()))
 	}
-	Logger.Infof("client: wrote %s (wrote: %d bytes)", message, n)
+	Logger.Debugf("client: wrote %s (wrote: %d bytes)", message, n)
 	if n == 0 {
 		return errors.New(fmt.Sprintf("client: written bytes: %d", n))
 	}
@@ -69,7 +70,7 @@ func (tcpClient *tcpClient) SendText(message string) error {
 		Logger.Errorf("client: write: %s", err.Error())
 		return errors.New(fmt.Sprintf("client: write: %s", err.Error()))
 	}
-	Logger.Infof("client: wrote %q (wrote: %d bytes)", message, n)
+	Logger.Debugf("client: wrote %q (wrote: %d bytes)", message, n)
 	if n == 0 {
 		return errors.New(fmt.Sprintf("client: written bytes: %d", n))
 	}
