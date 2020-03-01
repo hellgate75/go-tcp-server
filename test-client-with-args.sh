@@ -1,2 +1,2 @@
 #!/bin/sh
-go run github.com/hellgate75/go-tcp-server/client -verbosity DEBUG $@ 
+go run github.com/hellgate75/go-tcp-server/client $@ 
