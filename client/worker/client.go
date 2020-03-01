@@ -6,9 +6,9 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"github.com/hellgate75/go-deploy/log"
 	"github.com/hellgate75/go-tcp-server/client/proxy"
 	"github.com/hellgate75/go-tcp-server/common"
+	"github.com/hellgate75/go-tcp-server/log"
 )
 
 var Logger log.Logger = log.NewAppLogger("go-tcp-client", "INFO")

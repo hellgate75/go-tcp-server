@@ -43,7 +43,7 @@ Source test script is :
 It accepts optional parameters or the help request.
 
 
-## Available plugins:
+## Available plug-ins
 
 Here a sample screen of commands help request:
 
@@ -77,6 +77,19 @@ In order to enter command shell on the remote server you can use the sample scri
 <p align="center">
 	<image src="images/commands-interactive shell-3.png">
 </p><br/>
+
+
+
+## Need sample certificates?
+
+You can produce test client/server certificates using following provided script:
+
+```
+makecert.sh [-d] or using any of provided parameters. 
+```
+
+Run it without any parameter to read the usage.
+
 
 
 ## Build client and server
