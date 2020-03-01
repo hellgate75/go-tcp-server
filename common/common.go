@@ -40,5 +40,5 @@ type TCPClient interface {
 
 	GetHelp() []string
 
-	Close()
+	Close() error
 }

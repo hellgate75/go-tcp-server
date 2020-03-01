@@ -95,12 +95,12 @@ func (tcpClient *tcpClient) GetHelp() []string {
 	return proxy.Help()
 }
 
-func (tcpClient *tcpClient) Close() {
+func (tcpClient *tcpClient) Close() error {
 	if tcpClient.conn != nil {
 		tcpClient.conn.Close()
 		tcpClient.conn = nil
 	}
-
+	return nil
 }
 
 func NewClient(cert common.CertificateKeyPair, ipAddress string, port string) common.TCPClient {
