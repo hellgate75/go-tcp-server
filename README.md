@@ -55,7 +55,7 @@ Run it without any parameter to read the usage.
 
 
 
-## Build client and server
+## Build server
 
 Build server:
 
