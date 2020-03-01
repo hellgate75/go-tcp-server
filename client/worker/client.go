@@ -95,8 +95,17 @@ func (tcpClient *tcpClient) GetHelp() []string {
 	return proxy.Help()
 }
 
+func (tc *tcpClient) Clone() common.TCPClient {
+	return &tcpClient{
+		Cert:      tc.Cert,
+		IpAddress: tc.IpAddress,
+		Port:      tc.Port,
+	}
+}
+
 func (tcpClient *tcpClient) Close() error {
 	if tcpClient.conn != nil {
+		tcpClient.SendText("exit")
 		tcpClient.conn.Close()
 		tcpClient.conn = nil
 	}

@@ -152,12 +152,12 @@ func main() {
 			exitClient(client)
 			return
 		}
-		if "ok" == answer {
-			Logger.Successf("Command Message '%s' sent and executed successfully!!", cmd)
-			Logger.Debugf("Response: %v", answer)
-		} else {
+		if len(answer) >= 2 && "ko" == answer[0:2] {
 			Logger.Errorf("Command Message '%s' sent but failed!!", cmd)
 			Logger.Errorf("Response: %v", answer)
+		} else {
+			Logger.Successf("Command Message '%s' sent and executed successfully!!", cmd)
+			Logger.Debugf("Response: %v", answer)
 		}
 	}
 	exitClient(client)

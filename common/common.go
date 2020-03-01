@@ -40,5 +40,7 @@ type TCPClient interface {
 
 	GetHelp() []string
 
+	Clone() TCPClient
+
 	Close() error
 }
