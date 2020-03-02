@@ -161,6 +161,8 @@ func (logger *logger) log(level LogLevelValue, in ...interface{}) {
 		var itfs string = " " + string(toVerbosityLevel(level)) + " " + fmt.Sprint(in...) + "\n"
 		switch string(toVerbosityLevel(level)) {
 		case "DEBUG":
+			logger.output(color.LightYellow, 2, itfs)
+			break
 		case "TRACE":
 			logger.output(color.LightYellow, 2, itfs)
 			break
