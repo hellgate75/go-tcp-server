@@ -231,6 +231,14 @@ func handleClient(conn *tls.Conn, server *tcpServer) {
 			}
 			Logger.Infof("Changing buffer size to: %v", size)
 			buffSize = size
+		} else if command == "os-name" {
+			time.Sleep(2 * time.Second)
+			Logger.Infof("Sending OS type %s to client ...", runtime.GOOS)
+			_, errWelcome := common.WriteString(string(runtime.GOOS), conn)
+			if errWelcome != nil {
+				Logger.Error("Error sending welcome message")
+				continue
+			}
 		} else {
 			commander, errP := proxy.GetCommander(command)
 			if errP != nil {

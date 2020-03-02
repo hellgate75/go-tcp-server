@@ -1,8 +1,6 @@
 package common
 
-import (
-	"bytes"
-)
+import ()
 
 const (
 	DEFAULT_IP_ADDRESS        string = "0.0.0.0"
@@ -21,26 +19,4 @@ type TCPServer interface {
 	IsRunning() bool
 
 	Stop()
-}
-
-type TCPClient interface {
-	Open(insecureSkipVerify bool) error
-
-	IsOpen() bool
-
-	Send(message bytes.Buffer) error
-
-	SendText(message string) error
-
-	ApplyCommand(command string, params ...interface{}) error
-
-	ReadAnswer() (string, error)
-
-	ReadDataPack() ([]byte, error)
-
-	GetHelp() []string
-
-	Clone() TCPClient
-
-	Close() error
 }

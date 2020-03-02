@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/gookit/color"
 	"github.com/hellgate75/go-tcp-server/common"
 	"io/ioutil"
 	"os"
@@ -46,12 +47,13 @@ func isWindows() bool {
 }
 
 func execCommand(command string) (string, error) {
+	color.Yellow.Printf("Execute command: %s\n", command)
 	var cmd *exec.Cmd
 	if isWindows() {
-		fmt.Println("Command-Execute: Windows!!")
+		//		fmt.Println("Command-Execute: Windows!!")
 		cmd = exec.Command("cmd", "/C", command)
 	} else {
-		fmt.Println("Command-Execute: Linux!!")
+		//		fmt.Println("Command-Execute: Linux!!")
 		cmd = exec.Command("sh", "-c", command)
 	}
 	stdoutStderr, err := cmd.CombinedOutput()
@@ -62,6 +64,7 @@ func execCommand(command string) (string, error) {
 }
 
 func execLinuxCommand(command string) (string, error) {
+	color.Yellow.Printf("Execute command: %s\n", command)
 	cmd := exec.Command("sh", "-c", command)
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
@@ -127,6 +130,8 @@ func (shell *shell) Execute(conn *tls.Conn) error {
 		} else {
 			output, errExec = execLinuxCommand(file)
 		}
+		os.Remove(file)
+		os.Remove(folder)
 		if errExec != nil {
 			common.WriteString("ko:shell:script::exec->"+errExec.Error(), conn)
 			return errExec

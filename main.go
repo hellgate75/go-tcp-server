@@ -62,7 +62,12 @@ func main() {
 	}
 	Logger.Debugf("Summary:\nIp: %s\nPort: %s\ncerts: %v\nkeys: %v\n", host, port, certs, keys)
 	server := server.NewServer(certsPair, host, port)
-	server.Start()
+	errStart := server.Start()
+	if errStart != nil {
+		Logger.Errorf("Server start-up error: %s\n", errStart.Error())
+		panic(errStart.Error())
+
+	}
 	time.Sleep(2 * time.Second)
 	Logger.Debugf("Running: %v", server.IsRunning())
 	for server.IsRunning() {
