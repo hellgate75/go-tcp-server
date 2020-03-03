@@ -1,7 +1,7 @@
 <p align="center">
 <image width="150" height="50" src="images/kube-go.png"></image>&nbsp;
 <image width="260" height="410" src="images/golang-logo.png">
-&nbsp;<image width="150" height="50" src="images/tls-logo.png"></image>
+&nbsp;<image width="130" height="50" src="images/tls-logo.png"></image>
 </p><br/>
 <br/>
 
