@@ -13,11 +13,12 @@ import (
 
 var Logger log.Logger = log.NewAppLogger("go-tcp-server", "INFO")
 
-var certsStr = ""
-var keysStr = ""
-var host = ""
-var port = ""
+var certsStr string = ""
+var keysStr string = ""
+var host string = ""
+var port string = ""
 var verbosity string = ""
+var requiresChiphers string = "true"
 var fSet *flag.FlagSet
 
 func init() {
@@ -27,6 +28,7 @@ func init() {
 	fSet.StringVar(&host, "ip", common.DEFAULT_IP_ADDRESS, "Listening ip address")
 	fSet.StringVar(&port, "port", common.DEFAULT_PORT, "Listening port")
 	fSet.StringVar(&verbosity, "verbosity", "INFO", "Logger verbosity level [TRACE,DEBUG,INFO,ERROR,FATAL] ")
+	fSet.StringVar(&requiresChiphers, "requires-chiphers", "true", "Requires Chiphers and Cuerves algorithms (true|false)")
 }
 
 func main() {
@@ -61,7 +63,7 @@ func main() {
 		})
 	}
 	Logger.Debugf("Summary:\nIp: %s\nPort: %s\ncerts: %v\nkeys: %v\n", host, port, certs, keys)
-	server := server.NewServer(certsPair, host, port)
+	server := server.NewServer(certsPair, host, port, strings.ToLower(requiresChiphers) == "true")
 	errStart := server.Start()
 	if errStart != nil {
 		Logger.Errorf("Server start-up error: %s\n", errStart.Error())

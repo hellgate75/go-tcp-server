@@ -22,12 +22,13 @@ import (
 var Logger log.Logger = log.NewAppLogger("go-tcp-server", "INFO")
 
 type tcpServer struct {
-	Certs     []common.CertificateKeyPair
-	IpAddress string
-	Port      string
-	running   bool
-	conn      []*net.Conn
-	tlscon    []*tls.Conn
+	Certs                     []common.CertificateKeyPair
+	IpAddress                 string
+	Port                      string
+	RequiresChiphersAndCurves bool
+	running                   bool
+	conn                      []*net.Conn
+	tlscon                    []*tls.Conn
 }
 
 func (server *tcpServer) IsRunning() bool {
@@ -73,17 +74,26 @@ func (server *tcpServer) Start() error {
 		}
 		certificates = append(certificates, cert)
 	}
-	config := tls.Config{
-		Certificates:             certificates,
-		MinVersion:               tls.VersionTLS12,
-		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-		PreferServerCipherSuites: true,
-		CipherSuites: []uint16{
-			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-		},
+	var config *tls.Config
+	if !server.RequiresChiphersAndCurves {
+		Logger.Warn("No Chiphers and TLS Curves required...")
+		config = &tls.Config{
+			Certificates: certificates,
+		}
+
+	} else {
+		config = &tls.Config{
+			Certificates:             certificates,
+			MinVersion:               tls.VersionTLS10,
+			CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+			PreferServerCipherSuites: true,
+			CipherSuites: []uint16{
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+				tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			},
+		}
 	}
 	config.Rand = rand.Reader
 	if server.IpAddress == "" {
@@ -93,7 +103,7 @@ func (server *tcpServer) Start() error {
 		server.Port = common.DEFAULT_PORT
 	}
 	service := fmt.Sprintf("%s:%s", server.IpAddress, server.Port)
-	listener, err := tls.Listen("tcp", service, &config)
+	listener, err := tls.Listen("tcp", service, config)
 	if err != nil {
 		Logger.Fatalf("server: listen: %v", err)
 		if listener != nil {
@@ -264,13 +274,14 @@ func handleClient(conn *tls.Conn, server *tcpServer) {
 	Logger.Info("server: conn: closed")
 }
 
-func NewServer(certs []common.CertificateKeyPair, ipAddress string, port string) common.TCPServer {
+func NewServer(certs []common.CertificateKeyPair, ipAddress string, port string, requiresChiphers bool) common.TCPServer {
 	return &tcpServer{
-		Certs:     certs,
-		IpAddress: ipAddress,
-		Port:      port,
-		running:   false,
-		conn:      make([]*net.Conn, 0),
-		tlscon:    make([]*tls.Conn, 0),
+		Certs:                     certs,
+		IpAddress:                 ipAddress,
+		Port:                      port,
+		RequiresChiphersAndCurves: requiresChiphers,
+		running:                   false,
+		conn:                      make([]*net.Conn, 0),
+		tlscon:                    make([]*tls.Conn, 0),
 	}
 }
