@@ -133,7 +133,7 @@ func (server *tcpServer) Start() error {
 			Logger.Debugf("server: accepted from %s", conn.RemoteAddr())
 			tlscon, ok := conn.(*tls.Conn)
 			if ok {
-				Logger.Info("ok=true")
+				Logger.Debug("ok=true")
 				state := tlscon.ConnectionState()
 				for _, v := range state.PeerCertificates {
 					Logger.Info(x509.MarshalPKIXPublicKey(v.PublicKey))
