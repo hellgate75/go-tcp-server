@@ -64,7 +64,7 @@ if [ ! -e certs ]; then
 	mkdir certs
 fi 
 rm certs/* 2> /dev/null
-#echo create CA
+echo "create CA"
 openssl genrsa -out certs/ca.key 2048
 openssl req -new -x509 -key certs/ca.key -out certs/ca.crt -subj "$(echo "/C=$COUNTRY/ST=$STATE/L=Earth/O=\"$ORGANIZATION\"/OU=$UNIT/CN=$CN/emailAddress=$EMAIL")"
 echo "make server cert"
