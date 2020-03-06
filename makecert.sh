@@ -19,7 +19,8 @@ COUNTRY="IE"
 STATE="DUB"
 ORGANIZATION="My Organization"
 UNIT="IT"
-CN="www.my-corp.com"
+#CN="$(hostname)"
+CN="localhost"
 EMAIL="hellgate75@gmail.com"
 if [ "$#" -lt 1 ]; then
 	echo "No parameter provided!!"
@@ -63,10 +64,20 @@ if [ ! -e certs ]; then
 	mkdir certs
 fi 
 rm certs/* 2> /dev/null
-echo create CA
+#echo create CA
 openssl genrsa -out certs/ca.key 2048
-openssl req -new -x509 -key certs/ca.key -out certs/ca.crt
+openssl req -new -x509 -key certs/ca.key -out certs/ca.crt -subj "$(echo "/C=$COUNTRY/ST=$STATE/L=Earth/O=\"$ORGANIZATION\"/OU=$UNIT/CN=$CN/emailAddress=$EMAIL")"
 echo "make server cert"
-openssl req -new -nodes -x509 -out certs/server.pem -keyout certs/server.key -days 3650 -subj "$(echo "/C=$COUNTRY/ST=$STATE/L=Earth/O=\"$ORGANIZATION\"/OU=$UNIT/CN=$CN/emailAddress=$EMAIL")"
+openssl req -new -nodes -x509 -in certs/ca.crt -inform PEM -out certs/server.pem -keyout certs/server.key -days 3650 -subj "$(echo "/C=$COUNTRY/ST=$STATE/L=Earth/O=\"$ORGANIZATION\"/OU=$UNIT/CN=$CN/emailAddress=$EMAIL")"
 echo "make client cert"
-openssl req -new -nodes -x509 -out certs/client.pem -keyout certs/client.key -days 3650 -subj "$(echo "/C=$COUNTRY/ST=$STATE/L=Earth/O=\"$ORGANIZATION\"/OU=$UNIT/CN=$CN/emailAddress=$EMAIL")"
+openssl req -new -nodes -x509 -in certs/ca.crt -inform PEM -out certs/client.pem -keyout certs/client.key -days 3650 -subj "$(echo "/C=$COUNTRY/ST=$STATE/L=Earth/O=\"$ORGANIZATION\"/OU=$UNIT/CN=$CN/emailAddress=$EMAIL")"
+
+if [ "Linux" == "$(uname -s)" ]; then
+	sudo cp certs/ca.crt /usr/share/ca-certificate/
+	cd /usr/share/ca-certificate
+	sudo chmod 644 certificate.crt
+	sudo dpkg-reconfigure ca-certificates
+	sudo update-ca-certificates
+else
+	echo "Please install CA certificate as trusted root certification authority, in order to prevent X509 truststore problems"
+fi

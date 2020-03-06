@@ -32,11 +32,6 @@ func init() {
 }
 
 func main() {
-	if errParse := fSet.Parse(os.Args[1:]); errParse != nil {
-		Logger.Errorf("Error in arguments parse: %s", errParse.Error())
-		fSet.Usage()
-		os.Exit(1)
-	}
 	var args []string = os.Args
 	for _, arg := range args {
 		if "-h" == arg || "--help" == arg {
@@ -44,6 +39,11 @@ func main() {
 			os.Exit(0)
 		}
 
+	}
+	if errParse := fSet.Parse(os.Args[1:]); errParse != nil {
+		Logger.Errorf("Error in arguments parse: %s", errParse.Error())
+		fSet.Usage()
+		os.Exit(1)
 	}
 	if string(Logger.GetVerbosity()) != strings.ToUpper(verbosity) {
 		Logger.Debugf("Changing logger verbosity to: %s", strings.ToUpper(verbosity))

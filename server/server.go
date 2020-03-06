@@ -65,7 +65,6 @@ func (server *tcpServer) Start() error {
 	var certificates []tls.Certificate = make([]tls.Certificate, 0)
 
 	for _, keyPair := range server.Certs {
-		//cert, err := tls.LoadX509KeyPair("certs/server.pem", "certs/server.key")
 		cert, err := tls.LoadX509KeyPair(keyPair.Cert, keyPair.Key)
 
 		if err != nil {
