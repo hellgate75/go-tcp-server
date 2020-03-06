@@ -173,7 +173,7 @@ func (logger *logger) log(level LogLevelValue, in ...interface{}) {
 			logger.output(color.LightWhite, 2, itfs)
 			break
 		case "ERROR":
-			logger.output(color.LightRed, 2, itfs)
+			logger.output(color.Red, 2, itfs)
 			break
 		case "FATAL":
 			logger.output(color.Red, 2, itfs)
