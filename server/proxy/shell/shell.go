@@ -160,16 +160,23 @@ func (shell *shell) Execute(conn *tls.Conn) error {
 		}
 		var command string = ""
 		var err3 error
-		for "exit" != command && err3 == nil {
+		for "exit" != strings.ToLower(command) && err3 == nil {
 			command, err3 = common.ReadString(conn)
-			if err3 == nil {
+			if err3 == nil && "exit" != strings.ToLower(command) {
+				if "" == command {
+					continue
+				}
+				color.LightYellow.Sprintf("Command: <%s>", command)
 				var output string
 				output, err3 = execCommand(command)
+				//time.Sleep(2*time.Second)
 				if err3 == nil {
 					common.Write([]byte(output), conn)
 				} else {
 					common.Write([]byte(err3.Error()), conn)
 				}
+			} else if err3 != nil {
+				color.LightRed.Printf("Command <%s> Error: %s\n", command, err3.Error())
 			}
 		}
 		if err3 != nil {

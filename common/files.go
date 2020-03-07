@@ -53,7 +53,7 @@ func readString(buffSize int, conn *tls.Conn, timeout time.Duration) (string, er
 				return "", err
 			}
 		}
-		fmt.Printf("Reading data - received: %v, time passed: %s, timeout: %s\n", (n > 0), time.Now().Sub(start).String(), timeout.String())
+		//fmt.Printf("Reading data - received: %v, time passed: %s, timeout: %s\n", (n > 0), time.Now().Sub(start).String(), timeout.String())
 	}
 	return strings.TrimSpace(buff.String()), nil
 }
