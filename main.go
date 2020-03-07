@@ -29,6 +29,7 @@ func init() {
 	fSet.StringVar(&port, "port", common.DEFAULT_PORT, "Listening port")
 	fSet.StringVar(&verbosity, "verbosity", "INFO", "Logger verbosity level [TRACE,DEBUG,INFO,ERROR,FATAL] ")
 	fSet.StringVar(&requiresChiphers, "requires-chiphers", "true", "Requires Chiphers and Cuerves algorithms (true|false)")
+	server.Logger = Logger
 }
 
 func main() {

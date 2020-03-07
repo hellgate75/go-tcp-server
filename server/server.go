@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-var Logger log.Logger = log.NewAppLogger("go-tcp-server", "INFO")
+var Logger log.Logger = nil
 
 type tcpServer struct {
 	Certs                     []common.CertificateKeyPair
@@ -262,6 +262,7 @@ func handleClient(conn *tls.Conn, server *tcpServer) {
 				common.WriteString("ko:"+message, conn)
 				continue
 			}
+			commander.SetLogger(Logger)
 			errCom := commander.Execute(conn)
 			if errCom != nil {
 				var message string = "ko:command:"+command+"->"+errCom.Error()

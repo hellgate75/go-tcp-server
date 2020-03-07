@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gookit/color"
 	"github.com/hellgate75/go-tcp-server/common"
+	"github.com/hellgate75/go-tcp-server/log"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -14,7 +15,9 @@ import (
 	"time"
 )
 
-type shell struct{}
+type shell struct{
+	logger log.Logger
+}
 
 func getPathSeparator() string {
 	if runtime.GOOS == "windows" {
@@ -73,14 +76,16 @@ func execLinuxCommand(command string) (string, error) {
 	return fmt.Sprintf("%s\n", stdoutStderr), nil
 }
 
+func (shell *shell) SetLogger(logger log.Logger) {
+	shell.logger = logger
+}
+
 func (shell *shell) Execute(conn *tls.Conn) error {
-	time.Sleep(2 * time.Second)
 	interactive, err1 := common.ReadString(conn)
 	if err1 != nil {
 		return err1
 	}
 
-	time.Sleep(2 * time.Second)
 	action, err2 := common.ReadString(conn)
 	if err2 != nil {
 		return err2
@@ -90,7 +95,6 @@ func (shell *shell) Execute(conn *tls.Conn) error {
 		return errors.New("Shell interrupted from client")
 	}
 
-	time.Sleep(2 * time.Second)
 	if "script" == action {
 		if "true" == interactive {
 			var message string = "Cannot run SCRIPT interactive!!"
@@ -149,7 +153,11 @@ func (shell *shell) Execute(conn *tls.Conn) error {
 		if errExec != nil {
 			var message string = "shell:command (cmd:"+string(data)+") ::exec->"+errExec.Error()
 			common.Write([]byte(message), conn)
-			color.LightRed.Printf("Error excuting command: %s, Details: %s", string(data), errExec.Error())
+			if shell.logger != nil {
+				shell.logger.Errorf("Error excuting command: %s, Details: %s", string(data), errExec.Error())
+			} else {
+				color.LightRed.Printf("Error excuting command: %s, Details: %s", string(data), errExec.Error())
+			}
 			return errExec
 		}
 		common.Write([]byte(output), conn)
@@ -166,7 +174,11 @@ func (shell *shell) Execute(conn *tls.Conn) error {
 				if "" == command {
 					continue
 				}
-				color.LightYellow.Sprintf("Command: <%s>", command)
+				if shell.logger != nil {
+					shell.logger.Debugf("Command: <%s>", command)
+				} else {
+					color.LightYellow.Sprintf("Command: <%s>", command)
+				}
 				var output string
 				output, err3 = execCommand(command)
 				//time.Sleep(2*time.Second)
@@ -176,7 +188,11 @@ func (shell *shell) Execute(conn *tls.Conn) error {
 					common.Write([]byte(err3.Error()), conn)
 				}
 			} else if err3 != nil {
-				color.LightRed.Printf("Command <%s> Error: %s\n", command, err3.Error())
+				if shell.logger != nil {
+					shell.logger.Errorf("Command <%s> Error: %s\n", command, err3.Error())
+				} else {
+					color.LightRed.Printf("Command <%s> Error: %s\n", command, err3.Error())
+				}
 			}
 		}
 		if err3 != nil {
