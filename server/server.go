@@ -135,7 +135,7 @@ func (server *tcpServer) Start() error {
 				Logger.Debug("ok=true")
 				state := tlscon.ConnectionState()
 				for _, v := range state.PeerCertificates {
-					Logger.Info(x509.MarshalPKIXPublicKey(v.PublicKey))
+					Logger.Debug(x509.MarshalPKIXPublicKey(v.PublicKey))
 				}
 			}
 			server.tlscon = append(server.tlscon, tlscon)
@@ -165,9 +165,9 @@ func handleClient(conn *tls.Conn, server *tcpServer) {
 		}
 		var command string = str
 		if command == "" {
+			Logger.Debug("No command received ...")
 			continue
 		}
-		Logger.Info("server: conn: compute read")
 		Logger.Infof("Received command: <%s>", command)
 		if "exit" == strings.ToLower(command) {
 			open = false
@@ -264,7 +264,8 @@ func handleClient(conn *tls.Conn, server *tcpServer) {
 			}
 			errCom := commander.Execute(conn)
 			if errCom != nil {
-				common.WriteString("ko:command:"+command+"->"+errCom.Error(), conn)
+				var message string = "ko:command:"+command+"->"+errCom.Error()
+				common.WriteString(message, conn)
 			} else {
 				common.WriteString("ok", conn)
 			}

@@ -6,48 +6,76 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
+	"time"
 )
 
-func readBytes(buffSize int, conn *tls.Conn) ([]byte, error) {
+const(
+	DEFAULT_TIMEOUT time.Duration = 5 * time.Second
+)
+
+func readBytes(buffSize int, conn *tls.Conn, timeout time.Duration) ([]byte, error) {
 	buf := make([]byte, buffSize)
 	var buff *bytes.Buffer = bytes.NewBuffer([]byte{})
-	var n int = 1
+	var n int = 0
 	var err error
-	n, err = conn.Read(buf)
-	if err != nil {
-		return nil, err
+	start := time.Now()
+	for n <= 0 && int64(time.Now().Sub(start)) <= int64(timeout) {
+		n, err = conn.Read(buf)
+		if err != nil {
+			return nil, err
+		}
+		if n > 0 {
+			_, err = buff.Write(buf[:n])
+			if err != nil {
+				return []byte{}, err
+			}
+		}
 	}
-	if n > 0 {
-		_, err = buff.Write(buf[:n])
-	}
+	buff = bytes.NewBufferString(strings.TrimSpace(string(buff.Bytes())))
 	return buff.Bytes(), nil
 }
 
-func readString(buffSize int, conn *tls.Conn) (string, error) {
+func readString(buffSize int, conn *tls.Conn, timeout time.Duration) (string, error) {
 	buf := make([]byte, buffSize)
 	var buff *bytes.Buffer = bytes.NewBuffer([]byte{})
-	var n int = 1
+	var n int = 0
 	var err error
-	n, err = conn.Read(buf)
-	if err != nil {
-		return "", err
+	start := time.Now()
+	for n <= 0 && int64(time.Now().Sub(start)) <= int64(timeout) {
+		n, err = conn.Read(buf)
+		if err != nil {
+			return "", err
+		}
+		if n > 0 {
+			_, err = buff.Write(buf[:n])
+			if err != nil {
+				return "", err
+			}
+		}
+		fmt.Printf("Reading data - received: %v, time passed: %s, timeout: %s\n", (n > 0), time.Now().Sub(start).String(), timeout.String())
 	}
-	if n > 0 {
-		_, err = buff.Write(buf[:n])
-	}
-	return buff.String(), nil
+	return strings.TrimSpace(buff.String()), nil
+}
+
+func ReadStringTimeout(conn *tls.Conn, timeout time.Duration) (string, error) {
+	return readString(2048, conn, timeout)
 }
 
 func ReadString(conn *tls.Conn) (string, error) {
-	return readString(2048, conn)
+	return ReadStringTimeout(conn, DEFAULT_TIMEOUT)
+}
+
+func ReadStringBufferTimeout(buffSize int, conn *tls.Conn, timeout time.Duration) (string, error) {
+	return readString(buffSize, conn, timeout)
 }
 
 func ReadStringBuffer(buffSize int, conn *tls.Conn) (string, error) {
-	return readString(buffSize, conn)
+	return ReadStringBufferTimeout(buffSize, conn, DEFAULT_TIMEOUT)
 }
 
-func Read(conn *tls.Conn) ([]byte, error) {
-	value, errX := readString(2048, conn)
+func ReadTimeout(conn *tls.Conn, timeout time.Duration) ([]byte, error) {
+	value, errX := readString(2048, conn, timeout)
 	if errX != nil {
 		return nil, errX
 	}
@@ -55,7 +83,11 @@ func Read(conn *tls.Conn) ([]byte, error) {
 	if errY != nil {
 		return nil, errY
 	}
-	return readBytes(size, conn)
+	return readBytes(size, conn, timeout)
+}
+
+func Read(conn *tls.Conn) ([]byte, error) {
+	return ReadTimeout(conn, DEFAULT_TIMEOUT)
 }
 
 func writeString(value string, conn *tls.Conn) (int, error) {
@@ -69,10 +101,12 @@ func writeBytes(value []byte, conn *tls.Conn) (int, error) {
 }
 
 func WriteString(value string, conn *tls.Conn) (int, error) {
+	value = strings.TrimSpace(value)
 	return writeString(value, conn)
 }
 
 func Write(value []byte, conn *tls.Conn) (int, error) {
+	value = []byte(strings.TrimSpace(fmt.Sprintf("%s", string(value))))
 	n, err := writeString(fmt.Sprintf("%v", len(value)), conn)
 	if err != nil {
 		return 0, err

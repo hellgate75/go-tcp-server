@@ -94,32 +94,29 @@ func (shell *shell) Execute(conn *tls.Conn) error {
 	if "script" == action {
 		if "true" == interactive {
 			var message string = "Cannot run SCRIPT interactive!!"
-			common.WriteString("ko:shell:script->"+message, conn)
 			return errors.New(message)
 		}
 		fileName, err3 := common.ReadString(conn)
 		if err3 != nil {
-			common.WriteString("ko:shell:script->"+err3.Error(), conn)
 			return err3
 		}
 		time.Sleep(2 * time.Second)
 		data, err4 := common.Read(conn)
 		if err4 != nil {
-			common.WriteString("ko:shell:script->"+err4.Error(), conn)
 			return err4
 		}
 		folder, errD := ioutil.TempDir(userHomeDir(), "go_tcp_server_")
 		if errD != nil {
-			common.WriteString("ko:shell:script->"+errD.Error(), conn)
 			return errD
 		}
 		file := folder + getPathSeparator() + fileName
 
 		errF := ioutil.WriteFile(file, data, 0777)
 		if errF != nil {
-			common.WriteString("ko:shell:script->"+errF.Error(), conn)
 			return errF
 		}
+		time.Sleep(2 * time.Second)
+		common.WriteString("ok:continue shell", conn)
 		var output string
 		var errExec error
 		if strings.Contains(strings.ToLower(file), ".exe") ||
@@ -133,34 +130,32 @@ func (shell *shell) Execute(conn *tls.Conn) error {
 		os.Remove(file)
 		os.Remove(folder)
 		if errExec != nil {
-			common.WriteString("ko:shell:script::exec->"+errExec.Error(), conn)
+			common.Write([]byte(output), conn)
 			return errExec
 		}
 		common.Write([]byte(output), conn)
-		common.WriteString("ok", conn)
 	} else if "command" == action {
 		if "true" == interactive {
 			var message string = "Cannot run COMMAND interactive!!"
-			common.WriteString("ko:shell:command->"+message, conn)
 			return errors.New(message)
 		}
 		data, err3 := common.Read(conn)
 		if err3 != nil {
-			common.WriteString("ko:shell:command->"+err3.Error(), conn)
 			return err3
 		}
-		fmt.Printf("Command Execute: %s\n", string(data))
+		time.Sleep(2 * time.Second)
+		common.WriteString("ok:continue shell", conn)
 		output, errExec := execCommand(string(data))
 		if errExec != nil {
-			common.WriteString("ko:shell:command::exec->"+errExec.Error(), conn)
+			var message string = "shell:command (cmd:"+string(data)+") ::exec->"+errExec.Error()
+			common.Write([]byte(message), conn)
+			color.LightRed.Printf("Error excuting command: %s, Details: %s", string(data), errExec.Error())
 			return errExec
 		}
 		common.Write([]byte(output), conn)
-		common.WriteString("ok", conn)
 	} else if "shell" == action {
 		if "false" == interactive {
 			var message string = "Cannot run SHELL non interactive!!"
-			common.WriteString("ko:shell:shell->"+message, conn)
 			return errors.New(message)
 		}
 		var command string = ""
@@ -172,17 +167,16 @@ func (shell *shell) Execute(conn *tls.Conn) error {
 				output, err3 = execCommand(command)
 				if err3 == nil {
 					common.Write([]byte(output), conn)
-					time.Sleep(2 * time.Second)
+				} else {
+					common.Write([]byte(err3.Error()), conn)
 				}
 			}
 		}
 		if err3 != nil {
-			common.WriteString("ko:shell:shell->"+err3.Error(), conn)
 			return err3
 		}
 		common.WriteString("ok", conn)
 	} else {
-		common.WriteString("ko:shell:all->Invalid action: "+action, conn)
 		return errors.New("Invalid action: " + action)
 	}
 	return nil

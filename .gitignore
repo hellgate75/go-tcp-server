@@ -17,3 +17,4 @@
 **/.settings
 **/certs
 **/*.sum
+.idea

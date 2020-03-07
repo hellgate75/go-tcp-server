@@ -2,13 +2,13 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/hellgate75/go-tcp-server/common"
 	"github.com/hellgate75/go-tcp-server/log"
 	"github.com/hellgate75/go-tcp-server/server"
 	"os"
 	"strings"
 	"time"
+	//"fmt"
 )
 
 var Logger log.Logger = log.NewAppLogger("go-tcp-server", "INFO")
@@ -73,7 +73,7 @@ func main() {
 	time.Sleep(2 * time.Second)
 	Logger.Debugf("Running: %v", server.IsRunning())
 	for server.IsRunning() {
-		fmt.Print(".")
+//		fmt.Print(".")
 		time.Sleep(30 * time.Second)
 	}
 	Logger.Debugf("Exit!!")
