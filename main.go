@@ -19,6 +19,7 @@ var host string = ""
 var port string = ""
 var verbosity string = ""
 var requiresChiphers string = "true"
+var readTimeout int64 = 0
 var fSet *flag.FlagSet
 
 func init() {
@@ -29,6 +30,7 @@ func init() {
 	fSet.StringVar(&port, "port", common.DEFAULT_PORT, "Listening port")
 	fSet.StringVar(&verbosity, "verbosity", "INFO", "Logger verbosity level [TRACE,DEBUG,INFO,ERROR,FATAL] ")
 	fSet.StringVar(&requiresChiphers, "requires-chiphers", "true", "Requires Chiphers and Cuerves algorithms (true|false)")
+	fSet.Int64Var(&readTimeout, "readTimeout", 5, "Message Read timeout in seconds, used to keep listening for answer from clients")
 	server.Logger = Logger
 }
 
@@ -46,6 +48,7 @@ func main() {
 		fSet.Usage()
 		os.Exit(1)
 	}
+	common.DEFAULT_TIMEOUT = time.Duration(readTimeout) * time.Second
 	if string(Logger.GetVerbosity()) != strings.ToUpper(verbosity) {
 		Logger.Debugf("Changing logger verbosity to: %s", strings.ToUpper(verbosity))
 		Logger.SetVerbosity(log.VerbosityLevelFromString(strings.ToUpper(verbosity)))

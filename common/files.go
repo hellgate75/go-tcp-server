@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const(
+var(
 	DEFAULT_TIMEOUT time.Duration = 5 * time.Second
 )
 
