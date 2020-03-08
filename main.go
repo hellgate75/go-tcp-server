@@ -13,7 +13,7 @@ import (
 	//"fmt"
 )
 
-var Logger log.Logger = log.NewAppLogger("go-tcp-server", "INFO")
+var Logger log.Logger = log.NewLogger("go-tcp-server", "INFO")
 
 var certsStr string = ""
 var keysStr string = ""
