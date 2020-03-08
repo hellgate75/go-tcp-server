@@ -1,13 +1,14 @@
 package proxy
 
 import (
-	"fmt"
+	"github.com/hellgate75/go-tcp-common/log"
 	"github.com/hellgate75/go-tcp-modules/server/proxy"
 	"github.com/hellgate75/go-tcp-server/common"
-	"github.com/hellgate75/go-tcp-common/log"
-    "os"
-    "path/filepath"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"plugin"
+	"strings"
 )
 
 var Logger log.Logger = nil
@@ -18,19 +19,15 @@ var PluginLibrariesExtension = "so"
 
 func GetCommander(command string) (common.Commander, error) {
 	if UsePlugins {
-		fullPath := fmt.Sprintf("%s%s%s.%s", PluginLibrariesFolder, string(os.PathSeparator), command, PluginLibrariesExtension)
-		Logger.Debugf("server.proxy.GetCommander() -> Loading library: %s", fullPath)
-		plugin, err := plugin.Open(fullPath)
-		if err == nil {
-			sym, err2 := plugin.Lookup("GetCommander")
-			if err2 != nil {
-				commander, errPlugin := sym.(func(string)(common.Commander, error))(command)
-				if errPlugin != nil {
-					return nil, errPlugin
-				}
-				commander.SetLogger(Logger)
-				return commander, nil
+		Logger.Debugf("client.proxy.GetSender() -> Loading library for command: %s", command)
+		var sender common.Commander = nil
+		forEachSenderInPlugins(command, func(sendersList []common.Commander) {
+			if len(sendersList) > 0 {
+				sender = sendersList[0]
 			}
+		})
+		if sender != nil {
+
 		}
 	}
 	commander, errOrig := proxy.GetCommander(command)
@@ -40,6 +37,64 @@ func GetCommander(command string) (common.Commander, error) {
 	commander.SetLogger(Logger)
 	return commander, nil
 }
+
+
+func filterByExtension(fileName string) bool {
+	n := len(PluginLibrariesExtension)
+	fileNameLen := len(fileName)
+	posix := fileNameLen - n
+	return posix > 0 && strings.ToLower(fileName[posix:]) == strings.ToLower("." + PluginLibrariesExtension)
+}
+
+func listLibrariesInFolder(dirName string) []string {
+	var out []string = make([]string, 0)
+	_, err0 := os.Stat(dirName)
+	if err0 == nil {
+		lst, err1 := ioutil.ReadDir(dirName)
+		if err1 == nil {
+			for _,file := range lst {
+				if file.IsDir() {
+					fullDirPath := dirName + string(os.PathSeparator) + file.Name()
+					newList := listLibrariesInFolder(fullDirPath)
+					out = append(out, newList...)
+				} else {
+					if filterByExtension(file.Name()) {
+						fullFilePath := dirName + string(os.PathSeparator) + file.Name()
+						out = append(out, fullFilePath)
+
+					}
+				}
+			}
+		}
+	}
+	return out
+}
+
+func forEachSenderInPlugins(command string, callback func([]common.Commander)())  {
+	var senders []common.Commander = make([]common.Commander, 0)
+	dirName := PluginLibrariesFolder
+	_, err0 := os.Stat(dirName)
+	if err0 == nil {
+		libraries := listLibrariesInFolder(dirName)
+		for _,libraryFullPath := range libraries {
+			Logger.Debugf("client.proxy.forEachSenderInPlugins() -> Loading help from library: %s", libraryFullPath)
+			plugin, err := plugin.Open(libraryFullPath)
+			if err == nil {
+				sym, err2 := plugin.Lookup("GetCommander")
+				if err2 != nil {
+					commander, errPlugin := sym.(func(string)(common.Commander, error))(command)
+					if errPlugin != nil {
+						continue
+					}
+					commander.SetLogger(Logger)
+					senders = append(senders, commander)
+				}
+			}
+		}
+	}
+	callback(senders)
+}
+
 
 func getDefaultPluginsFolder() string {
     execPath, err := os.Executable()
