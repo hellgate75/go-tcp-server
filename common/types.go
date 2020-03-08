@@ -2,7 +2,7 @@ package common
 
 import (
 	"crypto/tls"
-	"github.com/hellgate75/go-tcp-server/log"
+	"github.com/hellgate75/go-tcp-common/log"
 )
 
 type Commander interface {

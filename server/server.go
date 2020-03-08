@@ -6,8 +6,9 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	commonnet "github.com/hellgate75/go-tcp-common/net"
 	"github.com/hellgate75/go-tcp-server/common"
-	"github.com/hellgate75/go-tcp-server/log"
+	"github.com/hellgate75/go-tcp-common/log"
 	"github.com/hellgate75/go-tcp-server/server/proxy"
 	"net"
 	"os"
@@ -157,7 +158,7 @@ func handleClient(conn *tls.Conn, server *tcpServer) {
 	var buffSize int = 2048
 	var open bool = true
 	for open {
-		str, errRead := common.ReadStringBuffer(buffSize, conn)
+		str, errRead := commonnet.ReadStringBuffer(buffSize, conn)
 		if errRead != nil {
 			Logger.Infof("server: conn: read error: %s", errRead)
 			open = false
@@ -176,7 +177,7 @@ func handleClient(conn *tls.Conn, server *tcpServer) {
 		} else if "shutdown" == strings.ToLower(command) {
 			open = false
 			Logger.Info("Shutdown server ...")
-			common.WriteString("ok", conn)
+			commonnet.WriteString("ok", conn)
 			conn.Close()
 			os.Exit(0)
 		} else if "restart" == strings.ToLower(command) {
@@ -186,7 +187,7 @@ func handleClient(conn *tls.Conn, server *tcpServer) {
 			if errExec != nil {
 				var message string = fmt.Sprintf("Error recovering executables -> Details: ", errExec.Error())
 				Logger.Error(message)
-				common.WriteString("ko:restart:"+message, conn)
+				commonnet.WriteString("ko:restart:"+message, conn)
 				conn.Close()
 				return
 			}
@@ -225,7 +226,7 @@ func handleClient(conn *tls.Conn, server *tcpServer) {
 				}
 				Logger.Warnf("Executables: %s, ran successfully", executable)
 			}()
-			common.WriteString("ok", conn)
+			commonnet.WriteString("ok", conn)
 			conn.Close()
 			server.Stop()
 			currentListener.Close()
@@ -243,7 +244,7 @@ func handleClient(conn *tls.Conn, server *tcpServer) {
 		} else if command == "os-name" {
 			time.Sleep(2 * time.Second)
 			Logger.Infof("Sending OS type %s to client ...", runtime.GOOS)
-			_, errWelcome := common.WriteString(string(runtime.GOOS), conn)
+			_, errWelcome := commonnet.WriteString(string(runtime.GOOS), conn)
 			if errWelcome != nil {
 				Logger.Error("Error sending welcome message")
 				continue
@@ -253,22 +254,22 @@ func handleClient(conn *tls.Conn, server *tcpServer) {
 			if errP != nil {
 				var message string = fmt.Sprintf("Error to find command: <%s> -> %s", command, errP.Error())
 				Logger.Error(message)
-				common.WriteString("ko:"+message, conn)
+				commonnet.WriteString("ko:"+message, conn)
 				continue
 			}
 			if commander == nil {
 				var message string = fmt.Sprintf("Error to reference command: <%s> !!", command)
 				Logger.Error(message)
-				common.WriteString("ko:"+message, conn)
+				commonnet.WriteString("ko:"+message, conn)
 				continue
 			}
 			commander.SetLogger(Logger)
 			errCom := commander.Execute(conn)
 			if errCom != nil {
 				var message string = "ko:command:"+command+"->"+errCom.Error()
-				common.WriteString(message, conn)
+				commonnet.WriteString(message, conn)
 			} else {
-				common.WriteString("ok", conn)
+				commonnet.WriteString("ok", conn)
 			}
 		}
 	}

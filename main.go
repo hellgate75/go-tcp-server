@@ -2,8 +2,9 @@ package main
 
 import (
 	"flag"
+	commonnet "github.com/hellgate75/go-tcp-common/net"
 	"github.com/hellgate75/go-tcp-server/common"
-	"github.com/hellgate75/go-tcp-server/log"
+	"github.com/hellgate75/go-tcp-common/log"
 	"github.com/hellgate75/go-tcp-server/server"
 	"github.com/hellgate75/go-tcp-server/server/proxy"
 	"os"
@@ -52,7 +53,7 @@ func main() {
 		fSet.Usage()
 		os.Exit(1)
 	}
-	common.DEFAULT_TIMEOUT = time.Duration(readTimeout) * time.Second
+	commonnet.DEFAULT_TIMEOUT = time.Duration(readTimeout) * time.Second
 	if string(Logger.GetVerbosity()) != strings.ToUpper(verbosity) {
 		Logger.Debugf("Changing logger verbosity to: %s", strings.ToUpper(verbosity))
 		Logger.SetVerbosity(log.VerbosityLevelFromString(strings.ToUpper(verbosity)))
