@@ -20,14 +20,14 @@ var PluginLibrariesExtension = "so"
 func GetCommander(command string) (common.Commander, error) {
 	if UsePlugins {
 		Logger.Debugf("client.proxy.GetSender() -> Loading library for command: %s", command)
-		var sender common.Commander = nil
-		forEachSenderInPlugins(command, func(sendersList []common.Commander) {
-			if len(sendersList) > 0 {
-				sender = sendersList[0]
+		var commander common.Commander = nil
+		forEachSenderInPlugins(command, func(commandersList []common.Commander) {
+			if len(commandersList) > 0 {
+				commander = commandersList[0]
 			}
 		})
-		if sender != nil {
-
+		if commander != nil {
+			return commander, nil
 		}
 	}
 	commander, errOrig := proxy.GetCommander(command)
