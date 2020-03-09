@@ -27,6 +27,7 @@ func GetCommander(command string) (common.Commander, error) {
 			}
 		})
 		if commander != nil {
+			commander.SetLogger(Logger)
 			return commander, nil
 		}
 	}
