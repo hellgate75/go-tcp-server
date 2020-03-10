@@ -1,3 +1,7 @@
+<p align="right">
+ <img src="https://github.com/hellgate75/go-tcp-server/workflows/Go/badge.svg?branch=master"></img>
+&nbsp;&nbsp;<img src="https://api.travis-ci.com/hellgate75/go-tcp-server.svg?branch=master" alt="trevis-ci" width="98" height="20" />&nbsp;&nbsp;<a href="https://travis-ci.com/hellgate75/go-tcp-server">Check last build on Travis-CI</a>
+ </p>
 <p align="center">
 <image width="150" height="50" src="images/kube-go.png"></image>&nbsp;
 <image width="260" height="410" src="images/golang-logo.png">
