@@ -33,8 +33,8 @@ func init() {
 	fSet.StringVar(&verbosity, "verbosity", "INFO", "Logger verbosity level [TRACE,DEBUG,INFO,ERROR,FATAL] ")
 	fSet.StringVar(&requiresChiphers, "requires-chiphers", "true", "Requires Chiphers and Cuerves algorithms (true|false)")
 	fSet.Int64Var(&readTimeout, "read-timeout", 5, "Message Read timeout in seconds, used to keep listening for answer from clients")
-	fSet.StringVar(&proxy.PluginLibrariesFolder, "prugins-folder", proxy.PluginLibrariesFolder, "Folder where seek for plugin(s) library [Linux Only]")
-	fSet.StringVar(&proxy.PluginLibrariesExtension, "prugins-extension", proxy.PluginLibrariesExtension, "File extension for plugin libraries [Linux Only]")
+	fSet.StringVar(&proxy.PluginLibrariesFolder, "plugins-folder", proxy.PluginLibrariesFolder, "Folder where seek for plugin(s) library [Linux Only]")
+	fSet.StringVar(&proxy.PluginLibrariesExtension, "plugins-extension", proxy.PluginLibrariesExtension, "File extension for plugin libraries [Linux Only]")
 	fSet.BoolVar(&proxy.UsePlugins, "use-plugins", proxy.UsePlugins, "Enable/disable plugins [true|false] [Linux Only]")
 	server.Logger = Logger
 }
