@@ -1,15 +1,13 @@
 package server
 
 import (
-	"crypto/rand"
 	"crypto/tls"
-	"crypto/x509"
-	"errors"
 	"fmt"
 	"github.com/hellgate75/go-tcp-server/common"
-	"github.com/hellgate75/go-tcp-server/log"
+	"github.com/hellgate75/go-tcp-common/log"
 	"github.com/hellgate75/go-tcp-server/server/proxy"
-	"net"
+	restcomm "github.com/hellgate75/go-tcp-common/net/rest/common"
+	restsrv "github.com/hellgate75/go-tcp-common/net/rest/tls/server"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,133 +17,9 @@ import (
 	"time"
 )
 
-var Logger log.Logger = log.NewAppLogger("go-tcp-server", "INFO")
+var Logger log.Logger = log.NewLogger("go-tcp-server", "INFO")
 
-type tcpServer struct {
-	Certs                     []common.CertificateKeyPair
-	IpAddress                 string
-	Port                      string
-	RequiresChiphersAndCurves bool
-	running                   bool
-	conn                      []*net.Conn
-	tlscon                    []*tls.Conn
-}
-
-func (server *tcpServer) IsRunning() bool {
-	return server.running
-}
-
-func (server *tcpServer) Stop() {
-	server.running = false
-	for _, conn := range server.tlscon {
-		if conn != nil {
-			(*conn).CloseWrite()
-		}
-	}
-	for _, conn := range server.conn {
-		if conn != nil {
-			(*conn).Close()
-		}
-	}
-}
-
-var currentListener net.Listener
-
-func (server *tcpServer) Start() error {
-	var err error
-	defer func() {
-		if r := recover(); r != nil {
-			err = errors.New(fmt.Sprintf("%v", r))
-			Logger.Errorf("Errors: %v", r)
-			Logger.Fatal("TCP Server exit ...")
-			os.Exit(0)
-		}
-	}()
-
-	var certificates []tls.Certificate = make([]tls.Certificate, 0)
-
-	for _, keyPair := range server.Certs {
-		cert, err := tls.LoadX509KeyPair(keyPair.Cert, keyPair.Key)
-
-		if err != nil {
-			Logger.Fatalf("server: loadkeys: %s", err)
-			panic("server: loadkeys:" + err.Error())
-		}
-		certificates = append(certificates, cert)
-	}
-	var config *tls.Config
-	if !server.RequiresChiphersAndCurves {
-		Logger.Warn("No Chiphers and TLS Curves required...")
-		config = &tls.Config{
-			Certificates: certificates,
-		}
-
-	} else {
-		config = &tls.Config{
-			Certificates:             certificates,
-			MinVersion:               tls.VersionTLS10,
-			CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-			PreferServerCipherSuites: true,
-			CipherSuites: []uint16{
-				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-				tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-			},
-		}
-	}
-	config.Rand = rand.Reader
-	if server.IpAddress == "" {
-		server.IpAddress = common.DEFAULT_IP_ADDRESS
-	}
-	if server.Port == "" {
-		server.Port = common.DEFAULT_PORT
-	}
-	service := fmt.Sprintf("%s:%s", server.IpAddress, server.Port)
-	listener, err := tls.Listen("tcp", service, config)
-	if err != nil {
-		Logger.Fatalf("server: listen: %v", err)
-		if listener != nil {
-			listener.Close()
-		}
-		panic("server: listen: " + err.Error())
-	}
-	currentListener = listener
-	Logger.Infof("server: listen: %v", service)
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				err = errors.New(fmt.Sprintf("%v", r))
-				Logger.Fatalf("TCP Server exit ...")
-			}
-			Logger.Info("TCP Server exit ...")
-		}()
-		server.running = true
-		for server.running {
-			conn, errN := listener.Accept()
-			if errN != nil {
-				Logger.Errorf("server: accept: %s", errN)
-				continue
-			}
-			server.conn = append(server.conn, &conn)
-			defer conn.Close()
-			Logger.Debugf("server: accepted from %s", conn.RemoteAddr())
-			tlscon, ok := conn.(*tls.Conn)
-			if ok {
-				Logger.Debug("ok=true")
-				state := tlscon.ConnectionState()
-				for _, v := range state.PeerCertificates {
-					Logger.Info(x509.MarshalPKIXPublicKey(v.PublicKey))
-				}
-			}
-			server.tlscon = append(server.tlscon, tlscon)
-			go handleClient(tlscon, server)
-		}
-	}()
-	return err
-}
-
-func handleClient(conn *tls.Conn, server *tcpServer) {
+func handleClient(conn *tls.Conn, server restcomm.RestServer) {
 	defer func() {
 		if r := recover(); r != nil {
 			Logger.Errorf("Errors handling client request: %v", r)
@@ -228,7 +102,7 @@ func handleClient(conn *tls.Conn, server *tcpServer) {
 			common.WriteString("ok", conn)
 			conn.Close()
 			server.Stop()
-			currentListener.Close()
+			//currentListener.Close()
 			time.Sleep(10 * time.Second)
 			os.Exit(0)
 		} else if len(command) > 12 && "buffer-size:" == strings.ToLower(command[:12]) {
@@ -273,14 +147,6 @@ func handleClient(conn *tls.Conn, server *tcpServer) {
 	Logger.Info("server: conn: closed")
 }
 
-func NewServer(certs []common.CertificateKeyPair, ipAddress string, port string, requiresChiphers bool) common.TCPServer {
-	return &tcpServer{
-		Certs:                     certs,
-		IpAddress:                 ipAddress,
-		Port:                      port,
-		RequiresChiphersAndCurves: requiresChiphers,
-		running:                   false,
-		conn:                      make([]*net.Conn, 0),
-		tlscon:                    make([]*tls.Conn, 0),
-	}
+func NewServer() restcomm.RestServer {
+	return restsrv.NewHandleFunc(restsrv.TLSHandleFunc(handleClient), Logger)
 }
