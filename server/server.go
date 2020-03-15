@@ -3,7 +3,7 @@ package server
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/hellgate75/go-tcp-server/common"
+	commonnet "github.com/hellgate75/go-tcp-common/net"
 	"github.com/hellgate75/go-tcp-common/log"
 	"github.com/hellgate75/go-tcp-server/server/proxy"
 	restcomm "github.com/hellgate75/go-tcp-common/net/rest/common"
@@ -31,7 +31,7 @@ func handleClient(conn *tls.Conn, server restcomm.RestServer) {
 	var buffSize int = 2048
 	var open bool = true
 	for open {
-		str, errRead := common.ReadStringBuffer(buffSize, conn)
+		str, errRead := commonnet.ReadStringBuffer(buffSize, conn)
 		if errRead != nil {
 			Logger.Infof("server: conn: read error: %s", errRead)
 			open = false
@@ -39,9 +39,9 @@ func handleClient(conn *tls.Conn, server restcomm.RestServer) {
 		}
 		var command string = str
 		if command == "" {
+			Logger.Debug("No command received ...")
 			continue
 		}
-		Logger.Info("server: conn: compute read")
 		Logger.Infof("Received command: <%s>", command)
 		if "exit" == strings.ToLower(command) {
 			open = false
@@ -50,7 +50,7 @@ func handleClient(conn *tls.Conn, server restcomm.RestServer) {
 		} else if "shutdown" == strings.ToLower(command) {
 			open = false
 			Logger.Info("Shutdown server ...")
-			common.WriteString("ok", conn)
+			commonnet.WriteString("ok", conn)
 			conn.Close()
 			os.Exit(0)
 		} else if "restart" == strings.ToLower(command) {
@@ -60,7 +60,7 @@ func handleClient(conn *tls.Conn, server restcomm.RestServer) {
 			if errExec != nil {
 				var message string = fmt.Sprintf("Error recovering executables -> Details: ", errExec.Error())
 				Logger.Error(message)
-				common.WriteString("ko:restart:"+message, conn)
+				commonnet.WriteString("ko:restart:"+message, conn)
 				conn.Close()
 				return
 			}
@@ -99,7 +99,7 @@ func handleClient(conn *tls.Conn, server restcomm.RestServer) {
 				}
 				Logger.Warnf("Executables: %s, ran successfully", executable)
 			}()
-			common.WriteString("ok", conn)
+			commonnet.WriteString("ok", conn)
 			conn.Close()
 			server.Stop()
 			//currentListener.Close()
@@ -117,7 +117,7 @@ func handleClient(conn *tls.Conn, server restcomm.RestServer) {
 		} else if command == "os-name" {
 			time.Sleep(2 * time.Second)
 			Logger.Infof("Sending OS type %s to client ...", runtime.GOOS)
-			_, errWelcome := common.WriteString(string(runtime.GOOS), conn)
+			_, errWelcome := commonnet.WriteString(string(runtime.GOOS), conn)
 			if errWelcome != nil {
 				Logger.Error("Error sending welcome message")
 				continue
@@ -127,20 +127,22 @@ func handleClient(conn *tls.Conn, server restcomm.RestServer) {
 			if errP != nil {
 				var message string = fmt.Sprintf("Error to find command: <%s> -> %s", command, errP.Error())
 				Logger.Error(message)
-				common.WriteString("ko:"+message, conn)
+				commonnet.WriteString("ko:"+message, conn)
 				continue
 			}
 			if commander == nil {
 				var message string = fmt.Sprintf("Error to reference command: <%s> !!", command)
 				Logger.Error(message)
-				common.WriteString("ko:"+message, conn)
+				commonnet.WriteString("ko:"+message, conn)
 				continue
 			}
+			commander.SetLogger(Logger)
 			errCom := commander.Execute(conn)
 			if errCom != nil {
-				common.WriteString("ko:command:"+command+"->"+errCom.Error(), conn)
+				var message string = "ko:command:"+command+"->"+errCom.Error()
+				commonnet.WriteString(message, conn)
 			} else {
-				common.WriteString("ok", conn)
+				commonnet.WriteString("ok", conn)
 			}
 		}
 	}

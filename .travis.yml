@@ -1,0 +1,12 @@
+language: ruby
+service:
+ - docker
+email: false
+before_script:
+- docker pull golang:1.13
+- docker pull golang:1.14
+- docker pull golang:latest
+script:
+- docker run --rm -it -e GOBIN=/go/bin -e GO111MODULE=off -v "$(pwd)":/usr/src/myapp -w /usr/src/myapp golang:1.13 sh -c "chmod +x /usr/src/myapp/init-docker-go.sh && sh /usr/src/myapp/init-docker-go.sh"
+- docker run --rm -it -e GOBIN=/go/bin -e GO111MODULE=off -v "$(pwd)":/usr/src/myapp -w /usr/src/myapp golang:1.14 sh -c "chmod +x /usr/src/myapp/init-docker-go.sh && sh /usr/src/myapp/init-docker-go.sh"
+- docker run --rm -it -e GOBIN=/go/bin -e GO111MODULE=off -v "$(pwd)":/usr/src/myapp -w /usr/src/myapp golang:latest sh -c "chmod +x /usr/src/myapp/init-docker-go.sh && sh /usr/src/myapp/init-docker-go.sh"

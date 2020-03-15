@@ -2,15 +2,17 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"github.com/hellgate75/go-tcp-common/log"
+	commonnet "github.com/hellgate75/go-tcp-common/net"
 	restcomm "github.com/hellgate75/go-tcp-common/net/rest/common"
 	"github.com/hellgate75/go-tcp-server/common"
-	"github.com/hellgate75/go-tcp-common/log"
 	"github.com/hellgate75/go-tcp-server/server"
+	"github.com/hellgate75/go-tcp-server/server/proxy"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+	//"fmt"
 )
 
 var Logger log.Logger = log.NewLogger("go-tcp-server", "INFO")
@@ -23,6 +25,7 @@ var host string = ""
 var port string = ""
 var verbosity string = ""
 var requiresChiphers string = "true"
+var readTimeout int64 = 0
 var fSet *flag.FlagSet
 
 func init() {
@@ -35,6 +38,11 @@ func init() {
 	fSet.StringVar(&port, "port", common.DEFAULT_PORT, "Listening port")
 	fSet.StringVar(&verbosity, "verbosity", "INFO", "Logger verbosity level [TRACE,DEBUG,INFO,ERROR,FATAL] ")
 	fSet.StringVar(&requiresChiphers, "requires-chiphers", "true", "Requires Chiphers and Cuerves algorithms (true|false)")
+	fSet.Int64Var(&readTimeout, "read-timeout", 5, "Message Read timeout in seconds, used to keep listening for answer from clients")
+	fSet.StringVar(&proxy.PluginLibrariesFolder, "plugins-folder", proxy.PluginLibrariesFolder, "Folder where seek for plugin(s) library [Linux Only]")
+	fSet.StringVar(&proxy.PluginLibrariesExtension, "plugins-extension", proxy.PluginLibrariesExtension, "File extension for plugin libraries [Linux Only]")
+	fSet.BoolVar(&proxy.UsePlugins, "use-plugins", proxy.UsePlugins, "Enable/disable plugins [true|false] [Linux Only]")
+	server.Logger = Logger
 }
 
 func main() {
@@ -51,6 +59,7 @@ func main() {
 		fSet.Usage()
 		os.Exit(1)
 	}
+	commonnet.DEFAULT_TIMEOUT = time.Duration(readTimeout) * time.Second
 	if string(Logger.GetVerbosity()) != strings.ToUpper(verbosity) {
 		Logger.Debugf("Changing logger verbosity to: %s", strings.ToUpper(verbosity))
 		Logger.SetVerbosity(log.VerbosityLevelFromString(strings.ToUpper(verbosity)))
@@ -89,7 +98,7 @@ func main() {
 	time.Sleep(2 * time.Second)
 	Logger.Debugf("Running: %v", server.IsRunning())
 	for server.IsRunning() {
-		fmt.Print(".")
+//		fmt.Print(".")
 		time.Sleep(30 * time.Second)
 	}
 	Logger.Debugf("Exit!!")
