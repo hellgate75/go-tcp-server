@@ -18,6 +18,7 @@ import (
 var Logger log.Logger = log.NewLogger("go-tcp-server", "INFO")
 
 var caCert string = ""
+var useTls bool = false
 var insecure bool = false
 var certsStr string = ""
 var keysStr string = ""
@@ -31,7 +32,8 @@ var fSet *flag.FlagSet
 func init() {
 	fSet = flag.NewFlagSet("go-tcp-server", flag.ExitOnError)
 	fSet.StringVar(&caCert, "ca-cert", "certs/ca.crt", "Ca Certificate file path")
-	fSet.BoolVar(&insecure, "inssecure-keys", false, "USe insecure keys acceptance")
+	fSet.BoolVar(&insecure, "insecure-keys", false, "Use insecure keys authorization")
+	fSet.BoolVar(&useTls, "use-tls", true, "Use SSL/TLS protocol")
 	fSet.StringVar(&certsStr, "certs", "certs/server.pem", "Comma separated pem server certificate files list")
 	fSet.StringVar(&keysStr, "keys", "certs/server.key", "Comma separated server certs keys files list")
 	fSet.StringVar(&host, "ip", common.DEFAULT_IP_ADDRESS, "Listening ip address")
@@ -59,37 +61,48 @@ func main() {
 		fSet.Usage()
 		os.Exit(1)
 	}
+
 	commonnet.DEFAULT_TIMEOUT = time.Duration(readTimeout) * time.Second
+
 	if string(Logger.GetVerbosity()) != strings.ToUpper(verbosity) {
 		Logger.Debugf("Changing logger verbosity to: %s", strings.ToUpper(verbosity))
 		Logger.SetVerbosity(log.VerbosityLevelFromString(strings.ToUpper(verbosity)))
 		server.Logger.SetVerbosity(log.VerbosityLevelFromString(strings.ToUpper(verbosity)))
 	}
-	var certs = strings.Split(certsStr, ",")
-	var keys = strings.Split(keysStr, ",")
-	var lenght int = len(certs)
-	if lenght > len(keys) {
-		lenght = len(keys)
-	}
-	var certsPair []restcomm.CertificateKeyPair = make([]restcomm.CertificateKeyPair, 0)
-	for i := 0; i < lenght; i++ {
-		certsPair = append(certsPair, restcomm.CertificateKeyPair{
-			Cert: certs[i],
-			Key:  keys[i],
-		})
-	}
-	Logger.Debugf("Summary:\nIp: %s\nPort: %s\ncerts: %v\nkeys: %v\ncaCert: %s\ninsecure: %v\n", host, port, certs, keys, caCert, insecure)
+
 	server := server.NewServer()
-	var portInt int
-	portInt, _ = strconv.Atoi(port)
-	if caCert != "" {
-		insecure = true
+	var portInt int32
+	portNum, _ := strconv.Atoi(port)
+	portInt = int32(portNum)
+	var certsPair []restcomm.CertificateKeyPair = make([]restcomm.CertificateKeyPair, 0)
+	if useTls {
+		var certs = strings.Split(certsStr, ",")
+		var keys = strings.Split(keysStr, ",")
+		var lenght int = len(certs)
+		if lenght > len(keys) {
+			lenght = len(keys)
+		}
+		for i := 0; i < lenght; i++ {
+			certsPair = append(certsPair, restcomm.CertificateKeyPair{
+				Cert: certs[i],
+				Key:  keys[i],
+			})
+		}
+		Logger.Debugf("Summary:\nIp: %s\nPort: %s\ncerts: %v\nkeys: %v\ncaCert: %s\ninsecure: %v\n", host, port, certs, keys, caCert, insecure)
+		if caCert != "" {
+			insecure = true
+		}
 	}
 	defer func(){
 		time.Sleep(5 * time.Second)
 		server.Stop()
 	}()
-	errStart := server.StartTLS(host, int32(portInt), certsPair, caCert, insecure)
+	var errStart error
+	if useTls {
+		errStart = server.StartTLS(host, portInt, certsPair, caCert, insecure)
+	} else {
+		errStart = server.Start(host, portInt)
+	}
 	if errStart != nil {
 		Logger.Errorf("Server start-up error: %s\n", errStart.Error())
 		panic(errStart.Error())
