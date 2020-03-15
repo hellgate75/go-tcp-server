@@ -89,9 +89,9 @@ func main() {
 			})
 		}
 		Logger.Debugf("Summary:\nIp: %s\nPort: %s\ncerts: %v\nkeys: %v\ncaCert: %s\ninsecure: %v\n", host, port, certs, keys, caCert, insecure)
-		if caCert != "" {
-			insecure = true
-		}
+		//if caCert != "" {
+		//	insecure = true
+		//}
 	}
 	defer func(){
 		time.Sleep(5 * time.Second)
